@@ -8,8 +8,7 @@
 [![R-CMD-check](https://github.com/greta-dev/greta.gp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/greta-dev/greta.gp/actions/workflows/R-CMD-check.yaml)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/greta.gp)](https://CRAN.R-project.org/package=greta.gp)
-[![Codecov test
-coverage](https://codecov.io/gh/greta-dev/greta.gp/branch/main/graph/badge.svg)](https://app.codecov.io/gh/greta-dev/greta.gp?branch=main)
+[![codecov](https://codecov.io/gh/greta-dev/greta.gp/graph/badge.svg?token=sDr01k2p2r)](https://codecov.io/gh/greta-dev/greta.gp)
 <!-- badges: end -->
 
 `greta.gp` extends greta to let you define Gaussian processes as part of
