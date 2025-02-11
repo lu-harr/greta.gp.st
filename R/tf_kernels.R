@@ -6,12 +6,15 @@ tf_cols <- function(X, active_dims) {
   X[, , active_dims, drop = FALSE]
 }
 
+# given two tensors with 3 dims, find Euclidean distances between the points ...
+# what do the dimensions here represent? which kernels are calling this?
 tf_distance <- function(x1, x2, squared = FALSE) {
-  n1 <- dim(x1)[[2]]
-  n2 <- dim(x2)[[2]]
+  n1 <- dim(x1)[[2]] # number of columns (2nd dim)
+  n2 <- dim(x2)[[2]] # number of columns
 
-  x1 <- tf$tile(tf$expand_dims(x1, 3L), list(1L, 1L, 1L, n2))
-  x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
+  x1 <- tf$tile(tf$expand_dims(x1, 3L), # shape == c(dim(x1), 1)
+                list(1L, 1L, 1L, n2)) # shape == c(dim(x1), n2)
+  x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L)) # shape c(x,y,z) -> c(z,y,x)
   x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
 
   dists <- (x1 - x2)^2
@@ -22,6 +25,32 @@ tf_distance <- function(x1, x2, squared = FALSE) {
   }
 
   dist
+}
+
+# given two matrices of lat-lons (in terms of circumference or radians), 
+# find great circle distance between points (in terms of circumference or radians)
+tf_great_circle_distance <- function(x1, x2, circumference = 1, radians = TRUE) {
+  n1 <- dim(x1)[[2]]
+  n2 <- dim(x2)[[2]]
+  
+  x1 <- tf$tile(tf$expand_dims(x1, 3L), list(1L, 1L, 1L, n2))
+  x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
+  x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
+  
+  dists <- (x1 - x2)^2
+  dist <- tf$reduce_sum(dists, axis = 2L)
+  
+  if (!squared) {
+    dist <- tf$math$sqrt(dist)
+  }
+  
+  dist
+  
+  # perhaps partition out conversion to distance in terms of circumference
+}
+
+tf_radians_to_distance <- function(dist, circumference = 1){
+  
 }
 
 # build a matrix with dimension given by the number of rows in X and the

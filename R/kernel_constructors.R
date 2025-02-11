@@ -240,3 +240,17 @@ periodic <- function(period, lengthscale, variance) {
     )
   )
 }
+
+#' @rdname kernels
+#' @export
+circmat <- function(lengthscale, variance, columns = seq(length(lengthscale) + 1)) {
+  # implementing for 2D only (single lengthscale)
+  greta_kernel("Circular Matern",
+               tf_name = "tf_CircMatern",
+               parameters = list(
+                 lengthscale = lengthscale,
+                 variance = variance
+               ),
+               arguments = list(active_dims = columns)
+  )
+}
