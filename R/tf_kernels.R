@@ -7,19 +7,21 @@ tf_cols <- function(X, active_dims) {
 }
 
 # given two tensors with 3 dims, find Euclidean distances between the points ...
-# what do the dimensions here represent? which kernels are calling this?
+# what do the dimensions here represent?
+# called by `tf_iid`, `get_distance`
 tf_distance <- function(x1, x2, squared = FALSE) {
-  n1 <- dim(x1)[[2]] # number of columns (2nd dim)
+  n1 <- dim(x1)[[2]] # number of columns i.e. lat and lon == 2 ? ... or number of points ?
   n2 <- dim(x2)[[2]] # number of columns
 
   x1 <- tf$tile(tf$expand_dims(x1, 3L), # shape == c(dim(x1), 1)
                 list(1L, 1L, 1L, n2)) # shape == c(dim(x1), n2)
-  x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L)) # shape c(x,y,z) -> c(z,y,x)
-  x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
+  x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
+  x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L)) # shapes of x1 and x2 now match
 
-  dists <- (x1 - x2)^2
-  dist <- tf$reduce_sum(dists, axis = 2L)
-
+  dists <- (x1 - x2)^2 # pairwise subtraction
+  dist <- tf$reduce_sum(dists, axis = 2L) # sum across 2th dimension (note axis indexing starts from 0)
+  # TIL you can declare integers in R
+  
   if (!squared) {
     dist <- tf$math$sqrt(dist)
   }
@@ -29,19 +31,47 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 
 # given two matrices of lat-lons (in terms of circumference or radians), 
 # find great circle distance between points (in terms of circumference or radians)
-tf_great_circle_distance <- function(x1, x2, circumference = 1, radians = TRUE) {
+tf_great_circle_distance <- function(x1, 
+                                     x2, 
+                                     latitude = 1L, # index of latitude column in x1 and x2 ... does this matter if it's common?
+                                     circumference = 1L, # sphere circumference (user-specified units)
+                                     radians = TRUE # return distances in radians OR in terms of circumference
+                                     ) {
   n1 <- dim(x1)[[2]]
   n2 <- dim(x2)[[2]]
   
-  x1 <- tf$tile(tf$expand_dims(x1, 3L), list(1L, 1L, 1L, n2))
-  x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
-  x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
+  # # not messing with these for now although I don't 100% understand what the
+  # # dimensions all correspond to:
+  # x1 <- tf$tile(tf$expand_dims(x1, 3L), list(1L, 1L, 1L, n2))
+  # x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
+  # x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
+  # 
+  # # lats1 <- tf$slice(x1, begin = list(0L, 0L, 1L, 0L), size = list(1L, n1, 1L, 1L))
+  # # lats2 <- tf$slice(x2, begin = list(0L, 0L, 1L, 0L), size = list(1L, n1, 1L, 1L))
+  # sines <- 
+  # 
+  # dists <- (x1 - x2)^2
+  # dist <- tf$reduce_sum(dists, axis = 2L) # should be summed across lon and lat?
+  # 
+  # acos(outer(sin(X[, lat]), sin(X_prime[, lat])) + # should be m * n
+  #        outer(cos(X[, lat]), cos(X_prime[, lat])) * 
+  #        cos(abs(outer(X[, lon], X_prime[, lon], "-")))) # should be m * n - m * n .. 
+  # replace outer product using broadcasting (as in OG distance function):
+  # a = tf.range(10)
+  # b = tf.range(5)
+  # outer = a[..., None] * b[None, ...]
+  # but not sure if it would be quicker to sine and cos *everything*, then pick out the lats (because of holding things in memory) ... or what?
   
-  dists <- (x1 - x2)^2
-  dist <- tf$reduce_sum(dists, axis = 2L)
+  # select lats and lons
   
-  if (!squared) {
-    dist <- tf$math$sqrt(dist)
+  # find sines and cozzes of lats, do products
+  
+  # find abs differences between lons
+  
+  # put everything together
+  
+  if (!radians){
+    dist <- dist * circumference
   }
   
   dist
@@ -304,13 +334,21 @@ tf_Add <- function(kernel_a, kernel_b) {
 get_dist <- function(X,
                      X_prime,
                      lengthscales = NULL,
-                     squared = FALSE) {
+                     great_circle = FALSE, # not overcomplicating this - reconfig for >2 dist formulas
+                     squared = FALSE,
+                     latitude = 1L, 
+                     circumference = 1L, 
+                     radians = TRUE) {
   if (!is.null(lengthscales)) {
     X <- X / lengthscales
     X_prime <- X_prime / lengthscales
   }
 
-  tf_distance(X, X_prime, squared = squared)
+  if (great_circle){
+    return(tf_great_circle_distance(X, X_prime, latitude, circumference, radians))
+  } else {
+    return(tf_distance(X, X_prime, squared = squared))
+  }
 }
 
 squared_dist <- function(X,
@@ -323,6 +361,19 @@ absolute_dist <- function(X,
                           X_prime,
                           lengthscales = NULL) {
   get_dist(X, X_prime, lengthscales, squared = FALSE)
+}
+
+great_circle_dist <- function(X,
+                              X_prime,
+                              lengthscales = NULL,
+                              latitude = 1L, # index of latitude column in x1 and x2
+                              circumference = 1L, # sphere circumference (user-specified units)
+                              radians = TRUE) {
+  get_dist(X, X_prime, lengthscales, 
+           great_circle = TRUE, 
+           latitude = latitude, 
+           circumference = circumference, 
+           radians = radians)
 }
 
 # combine as module for export via internals
@@ -338,3 +389,7 @@ absolute_dist <- function(X,
 #                             tf_Matern32,
 #                             tf_Matern52,
 #                             tf_cosine)
+
+
+
+
