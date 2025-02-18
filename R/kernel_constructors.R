@@ -244,13 +244,16 @@ periodic <- function(period, lengthscale, variance) {
 #' @rdname kernels
 #' @export
 circmat <- function(lengthscale, variance, columns = seq(length(lengthscale) + 1)) {
-  # implementing for 2D only (single lengthscale)
+  # implementing with 2D in mind (single lengthscale)
   greta_kernel("Circular Matern",
                tf_name = "tf_CircMatern",
                parameters = list(
                  lengthscale = lengthscale,
                  variance = variance
                ),
-               arguments = list(active_dims = columns)
+               arguments = list(active_dims = check_active_dims(columns, c(lengthscale, 0))) 
+               # HACK adding lengthscale here - only want one lengthscale for two columns
+               # which makes the error message in case of wrong number of lengthscales nonsensical
+               # `check_active_dims` returns Python-ised column indices (1 subtracted)
   )
 }

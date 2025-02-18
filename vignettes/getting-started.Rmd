@@ -62,6 +62,8 @@ draws <- mcmc(m)
 ```
 
 ```{r plotting, fig.width = 10, fig.height = 6, dpi = 200}
+library(scales)
+
 # plot 200 posterior samples
 plot(
   y ~ x,
@@ -80,4 +82,16 @@ for (i in 1:200) {
     col = rgb(0.7, 0.1, 0.4, 0.1)
   )
 }
+
+# summarise posterior samples
+f_plot_draws <- calculate(f_plot, values = draws, nsim=200)
+f_plot_est <- colMeans(f_plot_draws$f_plot[,,1])
+f_plot_sd <- apply(f_plot_draws$f_plot[,,1], 2, sd)
+f_plot_summ <- apply(f_plot_draws$f_plot[,,1], 2, summary)
+
+polygon(c(x_plot, rev(x_plot)),
+        c(f_plot_summ[2,], rev(f_plot_summ[5,])),
+        col=rgb(0, 0.5, 1, 0.5))
+
+lines(f_plot_est ~ x_plot)
 ```

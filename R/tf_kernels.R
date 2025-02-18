@@ -29,7 +29,7 @@ tf_distance <- function(x1, x2, squared = FALSE) {
   dist
 }
 
-# given two matrices of lat-lons (in terms of circumference or radians), 
+# given two tensors of lat-lons (in radians? degrees?), 
 # find great circle distance between points (in terms of circumference or radians)
 tf_great_circle_distance <- function(x1, 
                                      x2, 
@@ -37,6 +37,7 @@ tf_great_circle_distance <- function(x1,
                                      circumference = 1L, # sphere circumference (user-specified units)
                                      radians = TRUE # return distances in radians OR in terms of circumference
                                      ) {
+  # todo - raise issue if size of tensors isn't right (can only deal with lats and lons, not a mystery third dimension)
   n1 <- dim(x1)[[2]]
   n2 <- dim(x2)[[2]]
   
@@ -79,8 +80,8 @@ tf_great_circle_distance <- function(x1,
   # perhaps partition out conversion to distance in terms of circumference
 }
 
-tf_radians_to_distance <- function(dist, circumference = 1){
-  
+tf_radians_to_distance <- function(dist, circumference = 1L){
+  dist * circumference
 }
 
 # build a matrix with dimension given by the number of rows in X and the
