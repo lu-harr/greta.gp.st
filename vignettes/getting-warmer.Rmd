@@ -57,6 +57,8 @@ obs_sd <- lognormal(0, 1)
 kernel <- rbf(rep(rbf_len, 2), rbf_var) + bias(1)
 f <- gp(x, kernel)
 
+plot.kernel(kernel, )
+
 # likelihood
 distribution(y) <- normal(f, obs_sd)
 
@@ -69,10 +71,10 @@ f_plot <- greta.gp::project(f, x_plot)
 m <- model(f_plot)
 draws <- mcmc(m)
 
-# r_hats <- coda::gelman.diag(draws,
-#                             autoburnin = FALSE,
-#                             multivariate = FALSE)
-# summary(r_hats$psrf)
+r_hats <- coda::gelman.diag(draws,
+                            autoburnin = FALSE,
+                            multivariate = FALSE)
+summary(r_hats$psrf)
 ```
 
 Take 200 samples from the posterior we approximated above and summarise them:
