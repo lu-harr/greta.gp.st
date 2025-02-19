@@ -57,7 +57,7 @@ obs_sd <- lognormal(0, 1)
 kernel <- rbf(rep(rbf_len, 2), rbf_var) + bias(1)
 f <- gp(x, kernel)
 
-plot.kernel(kernel, )
+plot.kernel(kernel, dist_max = 11)
 
 # likelihood
 distribution(y) <- normal(f, obs_sd)
@@ -70,11 +70,6 @@ f_plot <- greta.gp::project(f, x_plot)
 # fit the model by Hamiltonian Monte Carlo
 m <- model(f_plot)
 draws <- mcmc(m)
-
-r_hats <- coda::gelman.diag(draws,
-                            autoburnin = FALSE,
-                            multivariate = FALSE)
-summary(r_hats$psrf)
 ```
 
 Take 200 samples from the posterior we approximated above and summarise them:
@@ -101,6 +96,67 @@ points(x, cex = y, col="white")
 ```
 
 The model's predictions are most different to the "truth" where the model has no data informing it. The posterior samples are most variable near extremes in the mean surface, where there is data.
+
+#### Example - a GP on a linear model (whatever it is we call that)
+
+Pinching an example right out of the `greta` forum ...
+
+```{r simulate, message = FALSE}
+# simulate data
+n <- 100
+x <- cbind(temp = rnorm(n),
+           rain = runif(10),
+           time = seq_len(n),
+           lat = runif(n),
+           lon = runif(n))
+
+# set component kernels
+environmental <- bias(1) + linear(c(5, 5), columns = 1:2) 
+temporal <- expo(100, 1, columns = 3)
+spatial <- mat32(c(3, 3), 1, columns = c(4:5))
+K <- environmental * temporal + spatial # combine the kernels
+eta <- gp(x, K)
+
+plot.kernel(environmental, 1)
+
+# aren't we missing the actual model?
+
+# pull out the separate components of this GP, by projecting it using only one 
+# of the component kernels
+eta_time <- greta.gp::project(eta, x, temporal)
+eta_space <- greta.gp::project(eta, x, spatial)
+
+# E.g. to fit a model (in this case just the prior) and plot just the temporal 
+# effects (which gets multiplied by the environmental linear model) you would do:
+m <- model(eta)
+draws <- mcmc(m)
+
+eta_time_draws <- calculate(eta_time, values=draws, nsim=100)
+eta_sim <- drop(eta_time_draws$eta_time)[100, ]
+plot(eta_sim ~ x[, "time"], type = "l") # Nick's line wiggles down
+
+eta_space_draws <- calculate(eta_space, values=draws, nsim=100) # have I gotten both dimensions? idk?
+eta_sim <- drop(eta_space_draws$eta_space)[100,]
+
+beta_0 <- normal(0, 5)
+sigma_e <- cauchy(0, 1, truncation = c(0, Inf))
+sigma_u <- cauchy(0, 1, truncation = c(0, Inf))
+lengthscale <- normal(0, 10, truncation = c(0, Inf))
+
+k1 <- mat32(lengthscale, sigma_u ^ 2)
+k2 <- bias(25)  # pass in the prior variance on beta_0 (5 ^ 2)
+K <- k1 + k2
+f_gp <- gp(pts, K, tol = 1e-6)
+f <- f_gp  # + beta_0
+
+distribution(y1) <- normal(f, sigma_e)
+
+m1 <- model(lengthscale, sigma_u) # no beta_0 in here
+draws1 <- mcmc(m1, one_by_one = TRUE)
+
+```
+
+
 
 
 
