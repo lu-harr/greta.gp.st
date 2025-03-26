@@ -72,7 +72,7 @@ tf_great_circle_distance <- function(x1,
   # put everything together
   
   if (!radians){
-    dist <- dist * circumference
+    dist <- radians_to_distance(dist, circumference)
   }
   
   dist
@@ -80,8 +80,13 @@ tf_great_circle_distance <- function(x1,
   # perhaps partition out conversion to distance in terms of circumference
 }
 
-tf_radians_to_distance <- function(dist, circumference = 1L){
+radians_to_distance <- function(dist, circumference = 1L){
   dist * circumference
+}
+
+
+degrees_to_radians <- function(degrees){
+  degrees * pi / 180L
 }
 
 # build a matrix with dimension given by the number of rows in X and the

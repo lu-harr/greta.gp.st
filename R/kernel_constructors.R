@@ -83,7 +83,7 @@ bias <- function(variance) {
 #' @export
 constant <- function(variance) {
   greta_kernel("constant",
-    tf_name = "tf_bias",
+    tf_name = "tf_constant",
     parameters = list(variance = variance)
   )
 }
@@ -243,17 +243,16 @@ periodic <- function(period, lengthscale, variance) {
 
 #' @rdname kernels
 #' @export
-circmat <- function(lengthscale, variance, columns = seq(length(lengthscale) + 1)) {
-  # implementing with 2D in mind (single lengthscale)
-  greta_kernel("Circular Matern",
-               tf_name = "tf_CircMatern",
-               parameters = list(
-                 lengthscale = lengthscale,
-                 variance = variance
-               ),
-               arguments = list(active_dims = check_active_dims(columns, c(lengthscale, 0))) 
-               # HACK adding lengthscale here - only want one lengthscale for two columns
-               # which makes the error message in case of wrong number of lengthscales nonsensical
-               # `check_active_dims` returns Python-ised column indices (1 subtracted)
+circmat <- function(lengthscale, variance, columns = seq(2)) {
+  # implementing specifically for 2D - single lengthscale, 
+  # columns is vector of length 2
+  greta_kernel("circular Matern",
+    tf_name = "tf_circMatern",
+    parameters = list(
+      lengthscale = lengthscale,
+      variance = variance
+    ),
+    arguments = list(active_dims = check_active_dims(columns, rep(0, 2)))
+    # `check_active_dims` returns Python-ised column indices (1 subtracted)
   )
 }
