@@ -10,18 +10,17 @@ tf_cols <- function(X, active_dims) {
 # what do the dimensions here represent?
 # called by `tf_iid`, `get_distance`
 tf_distance <- function(x1, x2, squared = FALSE) {
-  n1 <- dim(x1)[[2]] # number of columns i.e. lat and lon == 2 ? ... or number of points ?
-  n2 <- dim(x2)[[2]] # number of columns
+  n1 <- dim(x1)[[2]]
+  n2 <- dim(x2)[[2]]
 
-  x1 <- tf$tile(tf$expand_dims(x1, 3L), # shape == c(dim(x1), 1)
-                list(1L, 1L, 1L, n2)) # shape == c(dim(x1), n2)
+  x1 <- tf$tile(tf$expand_dims(x1, 3L),
+                list(1L, 1L, 1L, n2))
   x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
-  x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L)) # shapes of x1 and x2 now match
+  x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
 
-  dists <- (x1 - x2)^2 # pairwise subtraction
-  dist <- tf$reduce_sum(dists, axis = 2L) # sum across 2th dimension (note axis indexing starts from 0)
-  # TIL you can declare integers in R
-  
+  dists <- (x1 - x2)^2
+  dist <- tf$reduce_sum(dists, axis = 2L)
+
   if (!squared) {
     dist <- tf$math$sqrt(dist)
   }
@@ -29,61 +28,38 @@ tf_distance <- function(x1, x2, squared = FALSE) {
   dist
 }
 
-# given two tensors of lat-lons (in radians? degrees?), 
-# find great circle distance between points (in terms of circumference or radians)
-tf_great_circle_distance <- function(x1, 
-                                     x2, 
-                                     latitude = 1L, # index of latitude column in x1 and x2 ... does this matter if it's common?
-                                     circumference = 1L, # sphere circumference (user-specified units)
-                                     radians = TRUE # return distances in radians OR in terms of circumference
-                                     ) {
-  # todo - raise issue if size of tensors isn't right (can only deal with lats and lons, not a mystery third dimension)
-  n1 <- dim(x1)[[2]]
-  n2 <- dim(x2)[[2]]
-  
-  # # not messing with these for now although I don't 100% understand what the
-  # # dimensions all correspond to:
-  # x1 <- tf$tile(tf$expand_dims(x1, 3L), list(1L, 1L, 1L, n2))
-  # x2 <- tf$transpose(x2, perm = c(0L, 2L, 1L))
-  # x2 <- tf$tile(tf$expand_dims(x2, 1L), list(1L, n1, 1L, 1L))
-  # 
-  # # lats1 <- tf$slice(x1, begin = list(0L, 0L, 1L, 0L), size = list(1L, n1, 1L, 1L))
-  # # lats2 <- tf$slice(x2, begin = list(0L, 0L, 1L, 0L), size = list(1L, n1, 1L, 1L))
-  # sines <- 
-  # 
-  # dists <- (x1 - x2)^2
-  # dist <- tf$reduce_sum(dists, axis = 2L) # should be summed across lon and lat?
-  # 
-  # acos(outer(sin(X[, lat]), sin(X_prime[, lat])) + # should be m * n
-  #        outer(cos(X[, lat]), cos(X_prime[, lat])) * 
-  #        cos(abs(outer(X[, lon], X_prime[, lon], "-")))) # should be m * n - m * n .. 
-  # replace outer product using broadcasting (as in OG distance function):
-  # a = tf.range(10)
-  # b = tf.range(5)
-  # outer = a[..., None] * b[None, ...]
-  # but not sure if it would be quicker to sine and cos *everything*, then pick out the lats (because of holding things in memory) ... or what?
-  
-  # select lats and lons
-  
-  # find sines and cozzes of lats, do products
-  
-  # find abs differences between lons
-  
-  # put everything together
-  
-  if (!radians){
-    dist <- radians_to_distance(dist, circumference)
-  }
-  
-  dist
-  
-  # perhaps partition out conversion to distance in terms of circumference
+
+tf_great_circle_distance <- function(x1,
+                                     x2,
+                                     circumference = 1L,
+                                     lon = 1L,
+                                     lat = 2L,
+                                     radians = TRUE){
+    n1 <- dim(x1)[[2]]
+    n2 <- dim(x2)[[2]]
+
+    lam1 <- x1[:,:,lon] # check this syntax works in R ....
+    phi1 <- x1[:,:,lat]
+    lam2 <- x2[:,:,lon]
+    phi2  <- x2[:,:,lat]
+
+    dist = tf$math$acos(tf$reshape(
+                            tf$tensordot(tf$math$sin(phi1), 
+                                        tf$math$sin(phi2), axes=0L), 
+                                        c(1L, n1, n2)) +
+                        tf$reshape(
+                            tf$tensordot(tf$math$cos(phi1), 
+                                        tf$math$cos(phi2), axes=0L), 
+                                        c(1L, n1, n2)) *
+                        tf$expand_dims(
+                            tf$math$cos(tf$transpose(lam1) - lam2), 
+                                        axis = 0L))
+    dist * circumference
 }
 
 radians_to_distance <- function(dist, circumference = 1L){
   dist * circumference
 }
-
 
 degrees_to_radians <- function(degrees){
   degrees * pi / 180L

@@ -67,6 +67,7 @@
 #' mat52(lengthscales = 0.3, variance = 0.9)
 #' cosine(lengthscales = 0.68, variance = 0.8)
 #' periodic(period = 0.71, lengthscale = 0.59, variance = 0.2)
+#' circmat(lengthscale = 0.5, variance = 0.5)
 #' }
 NULL
 
@@ -243,8 +244,8 @@ periodic <- function(period, lengthscale, variance) {
 
 #' @rdname kernels
 #' @export
-circmat <- function(lengthscale, variance, columns = seq(2)) {
-  # implementing specifically for 2D - single lengthscale, 
+circmat <- function(lengthscale, variance, columns = seq_along(2)) {
+  # implementing specifically for 2D - single lengthscale,
   # columns is vector of length 2
   greta_kernel("circular Matern",
     tf_name = "tf_circMatern",

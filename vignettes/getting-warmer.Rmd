@@ -99,19 +99,25 @@ The model's predictions are most different to the "truth" where the model has no
 
 #### Example - a GP on a linear model (whatever it is we call that)
 
-Pinching an example right out of the `greta` forum ...
+Pinching an example right out of the `greta` forum ... let's say we have data of temperature and rain at places in space and time.
+
+$$
+
+$$
 
 ```{r simulate, message = FALSE}
 # simulate data
 n <- 100
-x <- cbind(temp = rnorm(n),
-           rain = runif(10),
+x <- data.frame(temp = (cos(seq_len(n) / 10) + 2) * 2 + rnorm(n),
+           rain = rnorm(n),
            time = seq_len(n),
            lat = runif(n),
            lon = runif(n))
+y <- x$temp - 0.3*(x$temp-4)**2  + x$rain
 
-# set component kernels
+# set component kernels - on environment, space and time
 environmental <- bias(1) + linear(c(5, 5), columns = 1:2) 
+# plot.kernel(environmental, dist_max = 10) # doesn't work yet ...
 temporal <- expo(100, 1, columns = 3)
 spatial <- mat32(c(3, 3), 1, columns = c(4:5))
 K <- environmental * temporal + spatial # combine the kernels
