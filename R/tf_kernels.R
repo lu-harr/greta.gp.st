@@ -1,14 +1,11 @@
 # tensorflow implementations of common kernels
 
-# given a vector of column numbers of relevant dimensions (in 0-based indexing),
-# pull out the corresponding sub-matrix
+
 tf_cols <- function(X, active_dims) {
   X[, , active_dims, drop = FALSE]
 }
 
-# given two tensors with 3 dims, find Euclidean distances between the points ...
-# what do the dimensions here represent?
-# called by `tf_iid`, `get_distance`
+
 tf_distance <- function(x1, x2, squared = FALSE) {
   n1 <- dim(x1)[[2]]
   n2 <- dim(x2)[[2]]
@@ -29,38 +26,36 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 }
 
 
-tf_great_circle_distance <- function(x1,
-                                     x2,
-                                     circumference = 1L,
-                                     lon = 1L,
-                                     lat = 2L,
-                                     radians = TRUE){
-    n1 <- dim(x1)[[2]]
-    n2 <- dim(x2)[[2]]
+# calculate great circle distance - 
+# may run into trouble for small distances (floating point precision)
+# note geosphere::distHaversine implements Vicenty formula
+tf_great_circle_distance <- function(x1, x2, circumference = 1L, 
+                                    lon = 0L, lat = 1L, radians = TRUE){
+  # TODO check x1 and x2 are in radians before proceeding
+  # (ideally this is done outside of any greta interaction)
+  n1 <- dim(x1)[[2]]
+  n2 <- dim(x2)[[2]]
 
-    lam1 <- x1[:,:,lon] # check this syntax works in R ....
-    phi1 <- x1[:,:,lat]
-    lam2 <- x2[:,:,lon]
-    phi2  <- x2[:,:,lat]
+  lam1 <- x1[, , lon]
+  phi1 <- x1[, , lat]
+  lam2 <- x2[, , lon]
+  phi2  <- x2[, , lat]
 
-    dist = tf$math$acos(tf$reshape(
-                            tf$tensordot(tf$math$sin(phi1), 
-                                        tf$math$sin(phi2), axes=0L), 
-                                        c(1L, n1, n2)) +
-                        tf$reshape(
-                            tf$tensordot(tf$math$cos(phi1), 
-                                        tf$math$cos(phi2), axes=0L), 
-                                        c(1L, n1, n2)) *
-                        tf$expand_dims(
-                            tf$math$cos(tf$transpose(lam1) - lam2), 
-                                        axis = 0L))
-    dist * circumference
-}
+  dist = tf$math$acos(
+            tf$reshape(
+              tf$tensordot(tf$math$sin(phi1), tf$math$sin(phi2), axes = 0L),
+              c(1L, n1, n2)) +
+            tf$reshape(
+              tf$tensordot(tf$math$cos(phi1), tf$math$cos(phi2), axes = 0L),
+              c(1L, n1, n2)) *
+            tf$expand_dims(tf$math$cos(tf$transpose(lam1) - lam2), axis = 0L)
+  )
 
-radians_to_distance <- function(dist, circumference = 1L){
   dist * circumference
 }
 
+
+# convert degrees to radians (for latlons)
 degrees_to_radians <- function(degrees){
   degrees * pi / 180L
 }
@@ -318,16 +313,14 @@ get_dist <- function(X,
                      lengthscales = NULL,
                      great_circle = FALSE, # not overcomplicating this - reconfig for >2 dist formulas
                      squared = FALSE,
-                     latitude = 1L, 
-                     circumference = 1L, 
-                     radians = TRUE) {
+                     circumference = 1L) {
   if (!is.null(lengthscales)) {
     X <- X / lengthscales
     X_prime <- X_prime / lengthscales
   }
 
   if (great_circle){
-    return(tf_great_circle_distance(X, X_prime, latitude, circumference, radians))
+    return(tf_great_circle_distance(X, X_prime, circumference))
   } else {
     return(tf_distance(X, X_prime, squared = squared))
   }
@@ -348,14 +341,11 @@ absolute_dist <- function(X,
 great_circle_dist <- function(X,
                               X_prime,
                               lengthscales = NULL,
-                              latitude = 1L, # index of latitude column in x1 and x2
-                              circumference = 1L, # sphere circumference (user-specified units)
-                              radians = TRUE) {
-  get_dist(X, X_prime, lengthscales, 
-           great_circle = TRUE, 
-           latitude = latitude, 
-           circumference = circumference, 
-           radians = radians)
+                              circumference = 1L # sphere circumference (user-specified units)
+                              ) {
+  get_dist(X, X_prime, lengthscales,
+           great_circle = TRUE,
+           circumference = circumference)
 }
 
 # combine as module for export via internals
