@@ -64,7 +64,6 @@ tf_great_circle_distance <- function(x1, x2, circumference = 1L,
 #' @return `degrees` in radians (numeric)
 #' @export
 #'
-#' @examples
 degrees_to_radians <- function(degrees){
   degrees * pi / 180L
 }
@@ -383,7 +382,6 @@ squared_dist <- function(X,
 #' @seealso [great_circle_dist()]
 #' @export
 #'
-#' @examples
 absolute_dist <- function(X,
                           X_prime,
                           lengthscales = NULL) {
@@ -405,7 +403,6 @@ absolute_dist <- function(X,
 #' 
 #' @export 
 #'
-#' @examples
 great_circle_dist <- function(X,
                               X_prime,
                               lengthscales = NULL,
