@@ -33,7 +33,7 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 # TODO check x1 and x2 are in radians before proceeding
 # (ideally this is done outside of any greta interaction)
 tf_great_circle_distance <- function(x1, x2, circumference = 1L, 
-                                    lon = 1L, lat = 2L, radians = TRUE){
+                                    lon = 0L, lat = 1L, radians = TRUE){
   
   n1 <- dim(x1)[[2]]
   n2 <- dim(x2)[[2]]
@@ -202,7 +202,7 @@ tf_polynomial <- function(X,
   )
 }
 
-# # exponential kernel (stationary class)
+# exponential kernel (stationary class)
 tf_exponential <- function(X,
                            X_prime,
                            lengthscales,
@@ -399,7 +399,7 @@ absolute_dist <- function(X,
 #' 
 #' @details function expects `X` and `X_prime` to be expressed in radians.
 #' 
-#' @seealso [degrees_to_radians(), circmat(), absolute_dist()]
+#' @seealso [degrees_to_radians()], [circmat()], [absolute_dist()]
 #' 
 #' @export 
 #'

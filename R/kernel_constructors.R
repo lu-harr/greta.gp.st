@@ -244,7 +244,7 @@ periodic <- function(period, lengthscale, variance) {
 
 #' @rdname kernels
 #' @export
-circmat <- function(lengthscale, variance, columns = seq_along(2), circumference = 1L) {
+circmat <- function(lengthscale, variance, columns = seq_along(1:2), circumference = 1L) {
   # implementing specifically for 2D - single lengthscale,
   # columns is vector of length 2
   greta_kernel("circular Matern",
