@@ -16,6 +16,7 @@
 \alias{mat52}
 \alias{cosine}
 \alias{periodic}
+\alias{circmat}
 \title{Gaussian process kernels}
 \usage{
 bias(variance)
@@ -50,6 +51,8 @@ mat52(lengthscales, variance, columns = seq_along(lengthscales))
 cosine(lengthscales, variance, columns = seq_along(lengthscales))
 
 periodic(period, lengthscale, variance)
+
+circmat(lengthscale, variance, columns = seq_along(2))
 }
 \arguments{
 \item{variance, variances}{(scalar/vector) the variance of a Gaussian process
@@ -127,5 +130,6 @@ mat32(lengthscales = 0.4, variance = 0.8)
 mat52(lengthscales = 0.3, variance = 0.9)
 cosine(lengthscales = 0.68, variance = 0.8)
 periodic(period = 0.71, lengthscale = 0.59, variance = 0.2)
+circmat(lengthscale = 0.5, variance = 0.5)
 }
 }
