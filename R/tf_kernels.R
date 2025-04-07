@@ -277,10 +277,14 @@ tf_circMatern <- function(X,
                           lengthscale,
                           variance,
                           active_dims,
-                          circumference = 6378137L){
+                          circumference = 1L){ # don't actually want circumference of Earth here - leaving option though ...
   # active dimensions
   X <- tf_cols(X, active_dims)
   X_prime <- tf_cols(X_prime, active_dims)
+
+  message("Warning: coordinates should be in radians")
+  # need to do some testing on what exactly happens if we violate this 
+  # ... perhaps include a test to display warning conditionally ...
 
   # calculate great circle distances
   r <- great_circle_dist(X, X_prime, lengthscale, circumference = circumference)
