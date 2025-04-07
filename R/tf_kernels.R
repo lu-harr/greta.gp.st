@@ -30,10 +30,11 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 # may run into trouble for small distances (floating point precision)
 # note geosphere::distHaversine implements Vicenty formula
 # pretty sure `lon` and `lat` are 1-indexing ...........
+# TODO check x1 and x2 are in radians before proceeding
+# (ideally this is done outside of any greta interaction)
 tf_great_circle_distance <- function(x1, x2, circumference = 1L, 
                                     lon = 1L, lat = 2L, radians = TRUE){
-  # TODO check x1 and x2 are in radians before proceeding
-  # (ideally this is done outside of any greta interaction)
+  
   n1 <- dim(x1)[[2]]
   n2 <- dim(x2)[[2]]
 
@@ -56,7 +57,14 @@ tf_great_circle_distance <- function(x1, x2, circumference = 1L,
 }
 
 
-# convert degrees to radians (for latlons)
+#' Convert degrees to radians
+#'
+#' @param degrees, numeric: number of decimal degrees to convert to radians
+#'
+#' @return `degrees` in radians (numeric)
+#' @export
+#'
+#' @examples
 degrees_to_radians <- function(degrees){
   degrees * pi / 180L
 }
@@ -365,12 +373,39 @@ squared_dist <- function(X,
   get_dist(X, X_prime, lengthscales, squared = TRUE)
 }
 
+#' Calculate absolute distance
+#'
+#' @param X 2-column matrix of longitudes and latitudes
+#' @param X_prime 2-column matrix of longitudes and latitude
+#' @param lengthscales numeric: to be supplied to `get_dist()`
+#'
+#' @return tensor of distances between all points in `X` and all points in `X_prime`
+#' @seealso [great_circle_dist()]
+#' @export
+#'
+#' @examples
 absolute_dist <- function(X,
                           X_prime,
                           lengthscales = NULL) {
   get_dist(X, X_prime, lengthscales, squared = FALSE)
 }
 
+#' Calculate great circle distance
+#'
+#' @param X 2-column matrix of longitudes and latitudes
+#' @param X_prime 2-column matrix of longitudes and latitude
+#' @param lengthscales numeric: to be supplied to `get_dist()`
+#' @param circumference numeric: sphere circumference in user-specified units, e.g. Earth: 6378137 metres
+#'
+#' @return tensor of distances between all points in `X` and all points in `X_prime`
+#' 
+#' @details function expects `X` and `X_prime` to be expressed in radians.
+#' 
+#' @seealso [degrees_to_radians(), circmat(), absolute_dist()]
+#' 
+#' @export 
+#'
+#' @examples
 great_circle_dist <- function(X,
                               X_prime,
                               lengthscales = NULL,
