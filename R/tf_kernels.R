@@ -29,8 +29,9 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 # calculate great circle distance - 
 # may run into trouble for small distances (floating point precision)
 # note geosphere::distHaversine implements Vicenty formula
+# pretty sure `lon` and `lat` are 1-indexing ...........
 tf_great_circle_distance <- function(x1, x2, circumference = 1L, 
-                                    lon = 0L, lat = 1L, radians = TRUE){
+                                    lon = 1L, lat = 2L, radians = TRUE){
   # TODO check x1 and x2 are in radians before proceeding
   # (ideally this is done outside of any greta interaction)
   n1 <- dim(x1)[[2]]
@@ -268,6 +269,33 @@ tf_Matern52 <- function(X,
   variance * (fl(1) + sqrt5 * r + fl(5) / fl(3) * tf$math$square(r)) * tf$math$exp(-sqrt5 * r)
 }
 
+# Circular Matern kernel (stationary class)
+# time should be implemented separately as tf_exponential() with fixed variance
+# need to incorporate variance here
+tf_circMatern <- function(X,
+                          X_prime,
+                          lengthscale,
+                          variance,
+                          active_dims,
+                          circumference = 6378137L){
+  # active dimensions
+  X <- tf_cols(X, active_dims)
+  X_prime <- tf_cols(X_prime, active_dims)
+
+  # calculate great circle distances
+  r <- great_circle_dist(X, X_prime, lengthscale, circumference = circumference)
+
+  # some of the types in here are a little confused ...
+  ls_inv <- 1L / tf$cast(lengthscale, "float32")
+  offset <- pi * ls_inv / 2L
+  cosh_coef <- 1L + offset / tf$math$tanh(offset)
+  scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
+  diffs <- (r - pi) * ls_inv / 2L
+ 
+  scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))
+}
+
+
 # cosine kernel (stationary class)
 tf_cosine <- function(X,
                       X_prime,
@@ -298,6 +326,7 @@ tf_periodic <- function(X,
   # construct and return periodic kernel
   variance * tf$math$exp(-fl(0.5) * tf$math$square(exp_arg))
 }
+
 
 tf_Prod <- function(kernel_a, kernel_b) {
   tf$math$multiply(kernel_a, kernel_b)
