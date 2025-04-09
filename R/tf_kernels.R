@@ -29,7 +29,6 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 # calculate great circle distance - 
 # may run into trouble for small distances (floating point precision)
 # note geosphere::distHaversine implements Vicenty formula
-# pretty sure `lon` and `lat` are 1-indexing ...........
 # TODO check x1 and x2 are in radians before proceeding
 # (ideally this is done outside of any greta interaction)
 tf_great_circle_distance <- function(x1, x2, circumference = 1L, 
@@ -284,14 +283,14 @@ tf_circMatern <- function(X,
                           lengthscale,
                           variance,
                           active_dims,
-                          circumference = 1L){ # don't actually want circumference of Earth here - leaving option though ...
+                          circumference = 1L){ # don't want circumference of Earth here - leaving option
   # active dimensions
   X <- tf_cols(X, active_dims)
   X_prime <- tf_cols(X_prime, active_dims)
 
   message("Warning: coordinates should be in radians")
   # need to do some testing on what exactly happens if we violate this 
-  # ... perhaps include a test to display warning conditionally ...
+  # ... include a test to display warning conditionally ...
 
   # calculate great circle distances
   r <- great_circle_dist(X, X_prime, lengthscale, circumference = circumference)
@@ -301,7 +300,7 @@ tf_circMatern <- function(X,
   offset <- pi * ls_inv / 2L
   cosh_coef <- 1L + offset / tf$math$tanh(offset)
   scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
-  diffs <- (r - pi) * ls_inv / 2L
+  diffs <- (fl(r) - fl(pi)) * fl(ls_inv) / 2L
  
   scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))
 }
