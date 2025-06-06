@@ -62,7 +62,6 @@ tf_great_circle_distance <- function(x1, x2, circumference = 1L,
 #'
 #' @return `degrees` in radians (numeric)
 #' @export
-#'
 degrees_to_radians <- function(degrees){
   degrees * pi / 180L
 }
