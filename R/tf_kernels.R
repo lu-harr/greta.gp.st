@@ -295,7 +295,7 @@ tf_circMatern <- function(X,
   r <- great_circle_dist(X, X_prime, lengthscale, circumference = circumference)
 
   # some of the types in here are a little confused ...
-  ls_inv <- 1L / tf$cast(lengthscale, "float32")
+  ls_inv <- 1L / tf$cast(lengthscale, "float64")
   offset <- pi * ls_inv / 2L
   cosh_coef <- 1L + offset / tf$math$tanh(offset)
   scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
