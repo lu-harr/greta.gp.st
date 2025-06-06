@@ -299,7 +299,9 @@ tf_circMatern <- function(X,
   offset <- pi * ls_inv / 2L
   cosh_coef <- 1L + offset / tf$math$tanh(offset)
   scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
-  diffs <- (fl(r) - fl(pi)) * fl(ls_inv) / 2L
+  # error: Expected float64, but got Tensor("Mul_1:0", shape=(1, 354, 354), dtype=float64) of type 'SymbolicTensor'.
+  # is that the r ?
+  diffs <- (r - fl(pi)) * fl(ls_inv) / 2L
  
   scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))
 }
