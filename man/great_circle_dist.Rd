@@ -4,16 +4,16 @@
 \alias{great_circle_dist}
 \title{Calculate great circle distance}
 \usage{
-great_circle_dist(X, X_prime, lengthscales = NULL, circumference = 1L)
+great_circle_dist(X, X_prime, active_dims, circumference = 1L)
 }
 \arguments{
 \item{X}{2-column matrix of longitudes and latitudes}
 
 \item{X_prime}{2-column matrix of longitudes and latitude}
 
-\item{lengthscales}{numeric: to be supplied to \code{get_dist()}}
-
 \item{circumference}{numeric: sphere circumference in user-specified units, e.g. Earth: 6378137 metres}
+
+\item{lengthscales}{numeric: to be supplied to \code{get_dist()}}
 }
 \value{
 tensor of distances between all points in \code{X} and all points in \code{X_prime}

@@ -31,27 +31,73 @@ tf_distance <- function(x1, x2, squared = FALSE) {
 # note geosphere::distHaversine implements Vicenty formula
 # TODO check x1 and x2 are in radians before proceeding
 # (ideally this is done outside of any greta interaction)
-tf_great_circle_distance <- function(x1, x2, circumference = 1L, 
-                                    lon = 0L, lat = 1L, radians = TRUE){
+tf_great_circle_distance <- function(x1, x2, 
+                                     active_dims = c(0L, 1L),
+                                     circumference = 1L, 
+                                     radians = TRUE){
+  lon <- active_dims[1]
+  lat <- active_dims[2]
   
   n1 <- dim(x1)[[2]]
   n2 <- dim(x2)[[2]]
+  
+  # message(tf$shape(x1))
+  # message(tf$shape(x2))
 
   lam1 <- x1[, , lon]
   phi1 <- x1[, , lat]
   lam2 <- x2[, , lon]
   phi2  <- x2[, , lat]
+  
+  # message("lam phi")
+  # message(tf$shape(phi1))
+  # 
+  phi1 <- tf$tile(tf$expand_dims(phi1, axis = 2L), list(1L, 1L, n2))
+  phi2 <- tf$tile(tf$expand_dims(phi2, axis = 1L), list(1L, n1, 1L))
+  
+  lam1 <- tf$tile(tf$expand_dims(lam1, axis = 2L), list(1L, 1L, n2))
+  lam2 <- tf$tile(tf$expand_dims(lam2, axis = 1L), list(1L, n1, 1L))
+  
+  bits <- tf$multiply(tf$math$sin(phi1), tf$math$sin(phi2)) + 
+    tf$multiply(tf$multiply(tf$math$cos(phi1), tf$math$cos(phi2)), 
+                tf$math$cos(lam1 - lam2))
+  
+  # dist <- tf$math$acos(
+  #   tf$multiply(tf$math$sin(phi1), tf$math$sin(phi2)) + 
+  #     tf$multiply(tf$multiply(tf$math$cos(phi1), tf$math$cos(phi2)), 
+  #                 tf$math$cos(lam1 - lam2))
+  # )
+  
+  # dist <- tryCatch(expr = {tf$math$acos(bits)},
+  #                  warning = function(w){
+  #                    message("Warn Lucy!: ", w)
+  #                    tf$math$acos(tf$clip(bits, -1, 1))
+  #                 },
+  #                 error = function(e){
+  #                   message("Error Lucy!: ", e)
+  #                   tf$math$acos(tf$clip(bits, -1, 1))
+  #                 })
+  
+  dist <- tf$math$acos(tf$clip_by_value(bits, -1, 1))
+  
+  # message("offending shape?")
+  # message(tf$shape(tf$tensordot(tf$math$sin(phi1), tf$math$sin(phi2), axes = 0L)))
+  # message("hopefully transpose")
+  # message(tf$shape(tf$transpose(lam1) - lam2))
+  # message("or this one?")
+  # message(tf$shape(tf$expand_dims(tf$math$cos(tf$transpose(lam1) - lam2), axis = 0L)))
+  # 
+  # dist = tf$math$acos(
+  #           tf$reshape(
+  #             tf$tensordot(tf$math$sin(phi1), tf$transpose(tf$math$sin(phi2)), axes = 0L),
+  #             c(1L, n1, n2)) +
+  #           tf$reshape(
+  #             tf$tensordot(tf$math$cos(phi1), tf$transpose(tf$math$cos(phi2)), axes = 0L),
+  #             c(1L, n1, n2)) *
+  #           tf$expand_dims(tf$math$cos(tf$transpose(lam1) - lam2), axis = 0L)
+  # )
 
-  dist = tf$math$acos(
-            tf$reshape(
-              tf$tensordot(tf$math$sin(phi1), tf$math$sin(phi2), axes = 0L),
-              c(1L, n1, n2)) +
-            tf$reshape(
-              tf$tensordot(tf$math$cos(phi1), tf$math$cos(phi2), axes = 0L),
-              c(1L, n1, n2)) *
-            tf$expand_dims(tf$math$cos(tf$transpose(lam1) - lam2), axis = 0L)
-  )
-
+  # message("dist ok")
   dist * circumference
 }
 
@@ -281,18 +327,31 @@ tf_circMatern <- function(X,
                           X_prime,
                           lengthscale,
                           variance,
-                          active_dims,
-                          circumference = 1L){ # don't want circumference of Earth here - leaving option
+                          active_dims = c(1L, 2L), # check these are hooked up to non-TF circMatern
+                          circumference = 1L, # don't want circumference of Earth here - leaving option
+                          radians = TRUE){ 
+  message(lengthscale)
+  message(variance)
+  
   # active dimensions
   X <- tf_cols(X, active_dims)
   X_prime <- tf_cols(X_prime, active_dims)
+  
+  #message("in tf_cm")
+  #message(active_dims, tf$shape(X), tf$shape(X_prime))
 
-  message("Warning: coordinates should be in radians")
+  # message("Warning: coordinates should be in radians")
   # need to do some testing on what exactly happens if we violate this 
   # ... include a test to display warning conditionally ...
+  if (radians == FALSE){
+    message("Caution: this feature needs testing")
+    X <- degrees_to_radians(X)
+    X_prime <- degrees_to_radians(X_prime)
+  }
 
   # calculate great circle distances
-  r <- great_circle_dist(X, X_prime, lengthscale, circumference = circumference)
+  r <- great_circle_dist(X, X_prime, active_dims, circumference)
+  #message(paste("Here", tf$shape(r)))
 
   # some of the types in here are a little confused ...
   ls_inv <- 1L / tf$cast(lengthscale, "float64")
@@ -301,8 +360,19 @@ tf_circMatern <- function(X,
   scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
   # have removed fl()s from r and ls_inv
   diffs <- (r - fl(pi)) * ls_inv / 2L
- 
-  scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))
+  message("diffs")
+  message(tf$shape(diffs))
+  ret <- tryCatch({scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))},
+                  warning = function(w){
+                    message("warn!") 
+                    NA
+                  }, error = function(e){
+                    message("errorr!")
+                    NA
+                  })
+  message("ret")
+  message(ret)
+  ret
 }
 
 
@@ -346,23 +416,24 @@ tf_Add <- function(kernel_a, kernel_b) {
   tf$math$add(kernel_a, kernel_b)
 }
 
+
 # rescale, calculate, and return distance
 get_dist <- function(X,
                      X_prime,
                      lengthscales = NULL,
-                     great_circle = FALSE, # not overcomplicating this - reconfig for >2 dist formulas
-                     squared = FALSE,
-                     circumference = 1L) {
+                     squared = FALSE) {
   if (!is.null(lengthscales)) {
     X <- X / lengthscales
     X_prime <- X_prime / lengthscales
   }
-
-  if (great_circle){
-    return(tf_great_circle_distance(X, X_prime, circumference))
-  } else {
-    return(tf_distance(X, X_prime, squared = squared))
-  }
+  
+  # let's not:
+  # if (great_circle){
+  #   message(paste0("Calling GC", tf$shape(X)))
+  #   return(tf_great_circle_distance(X, X_prime, circumference))
+  # } else {
+  
+  tf_distance(X, X_prime, squared = squared)
 }
 
 squared_dist <- function(X,
@@ -370,6 +441,7 @@ squared_dist <- function(X,
                          lengthscales = NULL) {
   get_dist(X, X_prime, lengthscales, squared = TRUE)
 }
+
 
 #' Calculate absolute distance
 #'
@@ -404,12 +476,14 @@ absolute_dist <- function(X,
 #'
 great_circle_dist <- function(X,
                               X_prime,
-                              lengthscales = NULL,
+                              active_dims,
                               circumference = 1L # sphere circumference (user-specified units)
                               ) {
-  get_dist(X, X_prime, lengthscales,
-           great_circle = TRUE,
-           circumference = circumference)
+  # get_dist(X, X_prime, lengthscales,
+  #          great_circle = TRUE,
+  #          circumference = circumference)
+  # skipping the scaling step in get_dist() (have removed lengthscale from args)
+  tf_great_circle_distance(X, X_prime, active_dims, circumference)
 }
 
 # combine as module for export via internals
