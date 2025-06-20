@@ -75,7 +75,7 @@ Note that the top-left value in the `greta.gp` implementation gives `9.50416476e
 The Circular Matern kernel takes two parameters: the variance, $\sigma^2$, and the lengthscale, $l$. The kernel takes one argument, $\delta$, the great circle distance between two points.
 
 $$
-C_s(\delta) = \left\{\left[\sinh\left(\frac{l}{2}\right) + \frac{l}{2} \cosh\left(\frac{l}{2}\right)\right]\cosh\left(\frac{l}{2}\right) - l\left(\delta - \frac{1}{2}\right) \sinh\left(l\left(\delta - \frac{1}{2}\right)\right)\right\}\times 4l^3\sinh^2\left(\frac{l}{2}\right)\times\sigma^2
+C_s(\delta) = \{[\sinh(\frac{l}{2}) + \frac{l}{2} \cosh(\frac{l}{2})]\cosh(\frac{l}{2}) - l(\delta - \frac{1}{2}) \sinh(l(\delta - \frac{1}{2}))\}\times 4l^3\sinh^2(\frac{l}{2})\times\sigma^2
 $$
 
 For the purposes of demonstration, here are some data: locations in space, $x$, with some associated response, $z$. Below, we have the same information in both degrees and radians ...
@@ -192,7 +192,7 @@ points(x_rd, cex = z - min(z) + 1)
 
 Scale ends up being fairly important here, because we're concerning ourselves with a sphere of fixed size. `greta` won't do much (read: will fail "initial values" checks) if we don't constrain HMC to reasonable hyperparameter values via priors. The priors used above probably don't have enough mass close to zero to let us get at an output with lots of peaks and troughs in the study area. We can use `greta::calculate()` to poke around at feasible hyperparameter values: 
 
-```{r, echo = FALSE, message = FALSE}
+```{r, echo = FALSE, message = FALSE, results = "hide"}
 # I don't quite understand why I need to do this?
 dev.off()
 ```
@@ -244,6 +244,6 @@ mtext("Informative lognormal prior on spatial lengthscale?", outer = TRUE, line 
 mtext("(Dashed lines are 5% and 95% quantiles)", outer = TRUE, side =1)
 ```
 
-
+Of course, I've only looked at lognormal priors here - there might be alternatives with lighter tails that would be more suited to the problem I have in mind. TODO!
 
 

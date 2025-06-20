@@ -78,7 +78,7 @@ $\sigma^2$, and the lengthscale, $l$. The kernel takes one argument,
 $\delta$, the great circle distance between two points.
 
 $$
-C_s(\delta) = \left\{\left[\sinh\left(\frac{l}{2}\right) + \frac{l}{2} \cosh\left(\frac{l}{2}\right)\right]\cosh\left(\frac{l}{2}\right) - l\left(\delta - \frac{1}{2}\right) \sinh\left(l\left(\delta - \frac{1}{2}\right)\right)\right\}\times 4l^3\sinh^2\left(\frac{l}{2}\right)\times\sigma^2
+C_s(\delta) = \{[\sinh(\frac{l}{2}) + \frac{l}{2} \cosh(\frac{l}{2})]\cosh(\frac{l}{2}) - l(\delta - \frac{1}{2}) \sinh(l(\delta - \frac{1}{2}))\}\times 4l^3\sinh^2(\frac{l}{2})\times\sigma^2
 $$
 
 For the purposes of demonstration, here are some data: locations in
@@ -148,8 +148,8 @@ draws <- mcmc(m, n_samples = 250,
                                         obs_sd = 0.5))
 #> Only one set of initial values was provided, and was used for all chains
 #> running 4 chains simultaneously on up to 8 CPU cores
-#>     warmup                                           0/1000 | eta:  ?s              warmup ==                                       50/1000 | eta: 24s | 2% bad     warmup ====                                    100/1000 | eta: 13s | 1% bad     warmup ======                                  150/1000 | eta:  9s | 1% bad     warmup ========                                200/1000 | eta:  7s | 2% bad     warmup ==========                              250/1000 | eta:  6s | 3% bad     warmup ===========                             300/1000 | eta:  5s | 4% bad     warmup =============                           350/1000 | eta:  4s | 4% bad     warmup ===============                         400/1000 | eta:  4s | 3% bad     warmup =================                       450/1000 | eta:  3s | 4% bad     warmup ===================                     500/1000 | eta:  3s | 4% bad     warmup =====================                   550/1000 | eta:  3s | 4% bad     warmup =======================                 600/1000 | eta:  2s | 4% bad     warmup =========================               650/1000 | eta:  2s | 4% bad     warmup ===========================             700/1000 | eta:  2s | 4% bad     warmup ============================            750/1000 | eta:  1s | 4% bad     warmup ==============================          800/1000 | eta:  1s | 4% bad     warmup ================================        850/1000 | eta:  1s | 4% bad     warmup ==================================      900/1000 | eta:  0s | 4% bad     warmup ====================================    950/1000 | eta:  0s | 4% bad     warmup ====================================== 1000/1000 | eta:  0s | 4% bad 
-#>   sampling                                            0/250 | eta:  ?s            sampling ========                                  50/250 | eta:  1s | 14% bad  sampling ===============                          100/250 | eta:  1s | 12% bad  sampling =======================                  150/250 | eta:  0s | 8% bad   sampling ==============================           200/250 | eta:  0s | 7% bad   sampling ======================================   250/250 | eta:  0s | 7% bad
+#>     warmup                                           0/1000 | eta:  ?s              warmup ==                                       50/1000 | eta: 27s              warmup ====                                    100/1000 | eta: 15s | 1% bad     warmup ======                                  150/1000 | eta: 10s | <1% bad    warmup ========                                200/1000 | eta:  8s | <1% bad    warmup ==========                              250/1000 | eta:  7s | <1% bad    warmup ===========                             300/1000 | eta:  6s | 1% bad     warmup =============                           350/1000 | eta:  5s | 3% bad     warmup ===============                         400/1000 | eta:  4s | 4% bad     warmup =================                       450/1000 | eta:  4s | 7% bad     warmup ===================                     500/1000 | eta:  3s | 9% bad     warmup =====================                   550/1000 | eta:  3s | 9% bad     warmup =======================                 600/1000 | eta:  2s | 9% bad     warmup =========================               650/1000 | eta:  2s | 9% bad     warmup ===========================             700/1000 | eta:  2s | 10% bad    warmup ============================            750/1000 | eta:  1s | 10% bad    warmup ==============================          800/1000 | eta:  1s | 11% bad    warmup ================================        850/1000 | eta:  1s | 11% bad    warmup ==================================      900/1000 | eta:  1s | 10% bad    warmup ====================================    950/1000 | eta:  0s | 10% bad    warmup ====================================== 1000/1000 | eta:  0s | 9% bad 
+#>   sampling                                            0/250 | eta:  ?s            sampling ========                                  50/250 | eta:  1s | 4% bad   sampling ===============                          100/250 | eta:  1s | 8% bad   sampling =======================                  150/250 | eta:  0s | 7% bad   sampling ==============================           200/250 | eta:  0s | 8% bad   sampling ======================================   250/250 | eta:  0s | 7% bad
 # certainly some jumpy things happening in here:
 bayesplot::mcmc_trace(draws)
 ```
@@ -163,9 +163,9 @@ coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 #> Potential scale reduction factors:
 #> 
 #>             Point est. Upper C.I.
-#> circmat_len       1.03       1.05
-#> circmat_var       1.08       1.16
-#> obs_sd            1.05       1.14
+#> circmat_len       1.06       1.13
+#> circmat_var       1.02       1.02
+#> obs_sd            1.04       1.12
 
 # There's probably a lovely built-in function to do this:
 par(mfrow = c(1,3), oma = c(2,0,0,0))
@@ -217,9 +217,6 @@ have enough mass close to zero to let us get at an output with lots of
 peaks and troughs in the study area. We can use `greta::calculate()` to
 poke around at feasible hyperparameter values:
 
-    #> null device 
-    #>           1
-
 ``` r
 # Make sure you populate nsim here:
 prior_eg = greta::calculate(f_plot,
@@ -269,3 +266,7 @@ mtext("(Dashed lines are 5% and 95% quantiles)", outer = TRUE, side =1)
 ```
 
 <img src="man/figures/new_bits-unnamed-chunk-10-1.png" width="100%" />
+
+Of course, I’ve only looked at lognormal priors here - there might be
+alternatives with lighter tails that would be more suited to the problem
+I have in mind. TODO!
