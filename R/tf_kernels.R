@@ -330,8 +330,8 @@ tf_circMatern <- function(X,
                           active_dims = c(1L, 2L), # check these are hooked up to non-TF circMatern
                           circumference = 1L, # don't want circumference of Earth here - leaving option
                           radians = TRUE){ 
-  message(lengthscale)
-  message(variance)
+  # message(lengthscale)
+  # message(variance)
   
   # active dimensions
   X <- tf_cols(X, active_dims)
@@ -360,8 +360,8 @@ tf_circMatern <- function(X,
   scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
   # have removed fl()s from r and ls_inv
   diffs <- (r - fl(pi)) * ls_inv / 2L
-  message("diffs")
-  message(tf$shape(diffs))
+  # message("diffs")
+  # message(tf$shape(diffs))
   ret <- tryCatch({scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))},
                   warning = function(w){
                     message("warn!") 
@@ -370,8 +370,8 @@ tf_circMatern <- function(X,
                     message("errorr!")
                     NA
                   })
-  message("ret")
-  message(ret)
+  # message("ret")
+  # message(ret)
   ret
 }
 

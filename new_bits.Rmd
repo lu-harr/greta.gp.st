@@ -1,0 +1,164 @@
+---
+title: 'greta.gp: New features in the fork'
+author: "Lucy Harrison"
+date: "2025-06-19"
+output: html_document
+---
+
+Here's a quick tour of the features I've added to this fork of `greta.gp`. Briefly, they are:
+
+- A new kernel class, `circmat`: the Circular Matern kernel is interesting because it allows us to account for the curvature of spheres (like Earth). A relative of other Matern kernels. I'm intending to use it on continental-scale modelling (where being on a sphere starts to become important).
+
+- An accompanying distance function, `great_circle_dist()`: implements formula for great circle distance (in radians).
+
+And here's how they work:
+
+### Great circle distance proof of concept
+
+Great circle distance is defined as follows:
+
+$$
+\Delta\sigma = \arccos(\sin\phi_1\sin\phi_2 + \cos\phi_1\cos\phi_2\cos\Delta\lambda)\\
+d = r\Delta\sigma
+$$
+
+Where $\lambda_1$ and $\lambda_2$ are the longitude and $\phi_1$ and $\phi_2$ are the latitude of two points. The *circumference* of the sphere, $r$, is an argument of `great_circle_dist()` and is set to 1 by default. Note that the *Haversine formula* performs better at smaller distances (where floating point precision becomes a problem) - something to ponder.
+
+```{r}
+source("R/tf_kernels.R")
+```
+
+```{r}
+library(tensorflow)
+
+# four points in degrees:
+x1 = matrix(c(145, -40, 150, -38, 140, -39, 130, -30), nrow=2)
+
+x1_deg = tf$transpose(tf$constant(x1))
+x1t = tf$expand_dims(x1_deg, axis = 0L)
+tf$shape(x1t)
+x1t = tf$tile(x1t, c(4L,1L,1L))
+x1 = degrees_to_radians(x1t)
+
+# TensorFlow function wrapped by `great_circle_dist()`
+gc_tf <- tf_great_circle_distance(x1,
+                                  x1, 
+                                  circumference = 6378137)/1000 # (distance in km)
+gc_tf[0,,0]
+```
+
+Here's an equivalent calculation for existing implementation in the `geosphere` package:
+
+```{r}
+library(geodist)
+x1 = data.frame(t(matrix(c(145, -40, 150, -38, 140, -39, 130, -30), nrow=2)))
+names(x1) = c("lon", "lat")
+geodist(x1, x1, measure = "haversine")
+```
+
+Note that the top-left value in the `greta.gp` implementation gives `9.50416476e-05`, where the Haversine implementation in `geosphere` correctly gives `0`.
+
+### Circular Matern demo
+
+Let's set up some data: locations in space $x$ with some associated response, $z$. Here, I've got the same information in both degrees and radians ...
+
+```{r, echo = FALSE}
+library(iddoPal)
+library(RColorBrewer)
+diverging <- colorRampPalette(iddo_palettes_sequential$BlGyRd)
+```
+
+```{r}
+library(raster)
+library(dplyr)
+library(greta.gp)
+
+set.seed(0784)
+x <- data.frame(x = runif(20, 1, 30), y = runif(20, 1, 30))
+x_rd <- degrees_to_radians(x)
+
+resp <- function(x, y){sin(x/2) + cos(y/2) + rnorm(length(x), 0, 0.5)}
+z <- resp(x$x, x$y)
+
+
+x_plot <- raster(nrow = 200, ncol = 200, xmn = 0, xmx = 30, ymn = -1, ymx = 30)
+x_coords <- rasterToPoints(x_plot)
+x_coords_rd <- degrees_to_radians(x_coords)
+x_plot_rd <- raster(nrow = 200, ncol = 200, 
+                    ext = extent(degrees_to_radians(as.vector(extent(x_plot)))))
+values(x_plot) <- resp(x_coords[,1], x_coords[,2])
+values(x_plot_rd) <- values(x_plot)
+
+par(mfrow = c(1,2))
+plot(x_plot, main="Here we're in degrees", col = diverging(100))
+points(x, cex = z - min(z) + 1)
+
+plot(x_plot_rd, main="And here we're in radians", col = diverging(100))
+points(x_rd,  cex = z - min(z) + 1)
+```
+
+Now we can set up our model ...
+
+```{r}
+# hyperparameters - see prior choice section below
+circmat_len <- lognormal(meanlog = -0.5, sdlog = 1)
+circmat_var <- lognormal(0, 2)
+obs_sd <- lognormal(0, 2)
+
+# kernel & GP
+kernel <- circmat(circmat_len, circmat_var) + bias(1)
+# Here's an existing kernel for sanity checking:
+# kernel <- mat52(c(circmat_len, circmat_len), circmat_var) + bias(1)
+f <- gp(x_rd, kernel)
+
+# likelihood
+distribution(z) <- normal(f, obs_sd)
+
+# fit the model by Hamiltonian Monte Carlo
+m <- model(circmat_len, circmat_var, obs_sd)
+```
+
+And then we can run HMC and do some checks:
+
+```{r}
+draws <- mcmc(m, n_samples = 250,
+              initial_values = initials(circmat_len = 0.02,
+                                        circmat_var = 0.5,
+                                        obs_sd = 0.5))
+# certainly some jumpy things happening in here:
+bayesplot::mcmc_trace(draws)
+
+# Looking for numbers under ~1.1:
+coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
+```
+
+And finally we can do some prediction:
+
+```{r}
+f_plot <- project(f, x_coords_rd)
+y_plot <- greta::calculate(f_plot,
+                           values = draws)
+
+# plot summaries of posterior samples for chain 1:
+med_vals <- apply(y_plot[[1]], 2, median)
+sd_vals <- apply(y_plot[[1]], 2, sd)
+
+med_ras <- x_plot_rd %>%
+  setValues(med_vals)
+sd_ras <- x_plot_rd %>%
+  setValues(sd_vals)
+
+par(mfrow=c(1,2))
+plot(med_ras, main="Median posterior samp")
+points(x_rd, cex = z - min(z) + 1)
+plot(sd_ras, main="SD posterior samp")
+points(x_rd, cex = z - min(z) + 1)
+```
+
+
+### Notes on prior choice
+
+Scale ends up being fairly important here, because we're concerning ourselves with a sphere of fixed size. `greta` won't do much (read: will fail "initial values" checks) if we don't constrain HMC to reasonable hyperparameter values via priors.
+
+
+
