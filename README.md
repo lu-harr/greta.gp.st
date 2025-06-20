@@ -15,6 +15,11 @@ status](https://www.r-pkg.org/badges/version/greta.gp)](https://CRAN.R-project.o
 your model. It provides a syntax to create and combine GP kernels, and
 use them to define either full rank or sparse Gaussian processes.
 
+## New bits in the fork
+
+Have a look at additions to this fork
+[here](https://github.com/lu-harr/greta.gp.st/blob/main/new_bits.md).
+
 ## Installation
 
 You can install the current release version of `greta.gp` from CRAN:
