@@ -242,6 +242,7 @@ legend("topright", c(paste("mean: ", mulogs, ", sd: ", sdlogs)), fill = pal)
 
 mtext("Informative lognormal prior on spatial lengthscale?", outer = TRUE, line = -2)
 mtext("(Dashed lines are 5% and 95% quantiles)", outer = TRUE, side =1)
+
 ```
 
 Of course, I've only looked at lognormal priors here - there might be alternatives with lighter tails that would be more suited to the problem I have in mind. TODO!

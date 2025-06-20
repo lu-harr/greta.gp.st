@@ -327,7 +327,7 @@ tf_circMatern <- function(X,
                           X_prime,
                           lengthscale,
                           variance,
-                          active_dims = c(1L, 2L), # check these are hooked up to non-TF circMatern
+                          active_dims, # removing c(1L, 2L) here - suspect another python-R shemozzle
                           circumference = 1L, # don't want circumference of Earth here - leaving option
                           radians = TRUE){ 
   # message(lengthscale)

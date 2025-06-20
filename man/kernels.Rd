@@ -52,7 +52,13 @@ cosine(lengthscales, variance, columns = seq_along(lengthscales))
 
 periodic(period, lengthscale, variance)
 
-circmat(lengthscale, variance, columns = seq_along(1:2), circumference = 1L)
+circmat(
+  lengthscale,
+  variance,
+  columns = seq_along(1:2),
+  circumference = 1L,
+  radians = TRUE
+)
 }
 \arguments{
 \item{variance, variances}{(scalar/vector) the variance of a Gaussian process

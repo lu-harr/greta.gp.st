@@ -244,7 +244,7 @@ periodic <- function(period, lengthscale, variance) {
 
 #' @rdname kernels
 #' @export
-circmat <- function(lengthscale, variance, columns = seq_along(1:2), circumference = 1L) {
+circmat <- function(lengthscale, variance, columns = seq_along(1:2), circumference = 1L, radians = TRUE) {
   # implementing specifically for 2D - single lengthscale,
   # columns is vector of length 2
   greta_kernel("circular Matern",
@@ -254,7 +254,8 @@ circmat <- function(lengthscale, variance, columns = seq_along(1:2), circumferen
       variance = variance
     ),
     arguments = list(active_dims = check_active_dims(columns, rep(0, 2)),
-                     circumference = 1L)
+                     circumference = 1L,
+                     radians = TRUE)
     # `check_active_dims` returns Python-ised column indices (1 subtracted)
   )
 }
