@@ -140,6 +140,8 @@ tf_bias <- function(X,
   tf_empty_along(X, X_prime, 1) * variance
 }
 
+tf_constant <- tf_bias
+
 # white kernel
 # diagonal with specified variance if self-kernel, all 0s otherwise
 tf_white <- function(X,
