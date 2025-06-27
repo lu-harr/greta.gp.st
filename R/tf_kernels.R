@@ -102,14 +102,25 @@ tf_great_circle_distance <- function(x1, x2,
 }
 
 
-#' Convert degrees to radians
+#' Convert degrees to radians or radians to degrees
 #'
 #' @param degrees, numeric: number of decimal degrees to convert to radians
+#' @param radians, numeric: number of radians to convert to decimal degrees
 #'
-#' @return `degrees` in radians (numeric)
+#' @return `degrees` or `radians` (numeric)
+#' @name degrees_radians
+NULL
+
+#' @rdname degrees_radians
 #' @export
 degrees_to_radians <- function(degrees){
   degrees * pi / 180L
+}
+
+#' @rdname degrees_radians
+#' @export
+radians_to_degrees <- function(radians){
+  radians * 180L / pi
 }
 
 # build a matrix with dimension given by the number of rows in X and the
