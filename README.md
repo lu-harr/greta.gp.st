@@ -41,6 +41,12 @@ You can also install the development version of `greta.gp` via GitHub:
 remotes::install_github("greta-dev/greta.gp")
 ```
 
+And you can install what’s in this fork:
+
+``` r
+remotes::install_github("lu-harr/greta.gp.st")
+```
+
 ## Example usage
 
 ``` r
