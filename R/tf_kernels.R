@@ -334,8 +334,9 @@ tf_Matern52 <- function(X,
 }
 
 # Circular Matern kernel (stationary class)
-# time should be implemented separately as tf_exponential() with fixed variance
-# need to incorporate variance here
+# time should be implemented separately  as expo/rbf with fixed variance
+# (note I tried this and it didn't work)
+# need to incorporate variance here ... well no wonder that wasn't working !
 tf_circMatern <- function(X,
                           X_prime,
                           lengthscale,
@@ -343,17 +344,11 @@ tf_circMatern <- function(X,
                           active_dims, # removing c(1L, 2L) here - suspect another python-R shemozzle
                           circumference = 1L, # don't want circumference of Earth here - leaving option
                           radians = TRUE){ 
-  # message(lengthscale)
-  # message(variance)
   
   # active dimensions
   X <- tf_cols(X, active_dims)
   X_prime <- tf_cols(X_prime, active_dims)
-  
-  #message("in tf_cm")
-  #message(active_dims, tf$shape(X), tf$shape(X_prime))
 
-  # message("Warning: coordinates should be in radians")
   # need to do some testing on what exactly happens if we violate this 
   # ... include a test to display warning conditionally ...
   if (radians == FALSE){
@@ -364,7 +359,6 @@ tf_circMatern <- function(X,
 
   # calculate great circle distances
   r <- great_circle_dist(X, X_prime, active_dims, circumference)
-  #message(paste("Here", tf$shape(r)))
 
   # some of the types in here are a little confused ...
   ls_inv <- 1L / tf$cast(lengthscale, "float64")
@@ -373,8 +367,6 @@ tf_circMatern <- function(X,
   scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
   # have removed fl()s from r and ls_inv
   diffs <- (r - fl(pi)) * ls_inv / 2L
-  # message("diffs")
-  # message(tf$shape(diffs))
   ret <- tryCatch({scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))},
                   warning = function(w){
                     message("warn!") 
@@ -383,9 +375,59 @@ tf_circMatern <- function(X,
                     message("errorr!")
                     NA
                   })
-  # message("ret")
-  # message(ret)
-  ret
+  ret * variance
+}
+
+
+# Gneiting class spatio-temporal kernel (stationary class)
+tf_gneiting <- function(X,
+                        X_prime,
+                        lengthscale,
+                        timescale,
+                        variance,
+                        active_dims,
+                        circumference = 1L, # don't want circumference of Earth here - leaving option
+                        radians = TRUE){ 
+  space_dims <- active_dims[1:2]
+  time_dim <- active_dim[3]
+  
+  # active dimensions
+  Xs <- tf_cols(X, space_dims)
+  Xs_prime <- tf_cols(X_prime, space_dims)
+  
+  Xt <- tf_cols(X, time_dim)
+  Xt_prime <- tf_cols(X_prime, time_dim)
+  
+  # need to do some testing on what exactly happens if we violate this 
+  # ... include a test to display warning conditionally ...
+  if (radians == FALSE){
+    message("Caution: this feature needs testing")
+    Xs <- degrees_to_radians(Xs)
+    Xs_prime <- degrees_to_radians(Xs_prime)
+  }
+  
+  # calculate great circle distances
+  r <- great_circle_dist(Xs, Xs_prime, space_dims, circumference)
+  
+  # from circmat
+  # # some of the types in here are a little confused ...
+  # ls_inv <- 1L / tf$cast(lengthscale, "float64")
+  # offset <- pi * ls_inv / 2L
+  # cosh_coef <- 1L + offset / tf$math$tanh(offset)
+  # scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
+  # # have removed fl()s from r and ls_inv
+  # diffs <- (r - fl(pi)) * ls_inv / 2L
+  # ret <- tryCatch({scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))},
+  #                 warning = function(w){
+  #                   message("warn!") 
+  #                   NA
+  #                 }, error = function(e){
+  #                   message("errorr!")
+  #                   NA
+  #                 })
+  # ret
+  
+  ret <- tf$cast(variance, "float64")
 }
 
 

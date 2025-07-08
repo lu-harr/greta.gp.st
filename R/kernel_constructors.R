@@ -259,3 +259,30 @@ circmat <- function(lengthscale, variance, columns = seq_along(1:2), circumferen
     # `check_active_dims` returns Python-ised column indices (1 subtracted)
   )
 }
+
+#' @rdname kernels
+#' @export
+gneiting <- function(lengthscale, 
+                     timescale, 
+                     variance, 
+                     columns = seq_along(1:3), 
+                     circumference = 1L, 
+                     radians = TRUE) {
+  # we're assuming that the first two columns are spatial coords and the third is temporal
+  greta_kernel("gneiting",
+               tf_name = "tf_gneiting",
+               parameters = list(
+                 lengthscale = lengthscale,
+                 timescale = timescale,
+                 variance = variance
+               ),
+               arguments = list(active_dims = check_active_dims(columns, rep(0, 3)),
+                                circumference = 1L,
+                                radians = TRUE)
+               # `check_active_dims` returns Python-ised column indices (1 subtracted)
+  )
+}
+
+
+
+
