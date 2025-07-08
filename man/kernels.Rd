@@ -17,6 +17,7 @@
 \alias{cosine}
 \alias{periodic}
 \alias{circmat}
+\alias{gneiting}
 \title{Gaussian process kernels}
 \usage{
 bias(variance)
@@ -56,6 +57,15 @@ circmat(
   lengthscale,
   variance,
   columns = seq_along(1:2),
+  circumference = 1L,
+  radians = TRUE
+)
+
+gneiting(
+  lengthscale,
+  timescale,
+  variance,
+  columns = seq_along(1:3),
   circumference = 1L,
   radians = TRUE
 )

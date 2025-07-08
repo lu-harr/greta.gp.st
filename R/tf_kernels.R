@@ -389,7 +389,7 @@ tf_gneiting <- function(X,
                         circumference = 1L, # don't want circumference of Earth here - leaving option
                         radians = TRUE){ 
   space_dims <- active_dims[1:2]
-  time_dim <- active_dim[3]
+  time_dim <- active_dims[3]
   
   # active dimensions
   Xs <- tf_cols(X, space_dims)
@@ -400,34 +400,24 @@ tf_gneiting <- function(X,
   
   # need to do some testing on what exactly happens if we violate this 
   # ... include a test to display warning conditionally ...
+  # (have inadvertantly found some very fun patterns)
   if (radians == FALSE){
     message("Caution: this feature needs testing")
     Xs <- degrees_to_radians(Xs)
     Xs_prime <- degrees_to_radians(Xs_prime)
   }
   
-  # calculate great circle distances
-  r <- great_circle_dist(Xs, Xs_prime, space_dims, circumference)
+  # dividing lengthscale here in preparation for calling tf_great_circle_dist below
+  # Xs <- Xs / lengthscale
+  # Xs_prime <- Xs_prime / lengthscale
   
-  # from circmat
-  # # some of the types in here are a little confused ...
-  # ls_inv <- 1L / tf$cast(lengthscale, "float64")
-  # offset <- pi * ls_inv / 2L
-  # cosh_coef <- 1L + offset / tf$math$tanh(offset)
-  # scale_inv <- 1L / (tf$math$cosh(offset) + offset / tf$math$sinh(offset))
-  # # have removed fl()s from r and ls_inv
-  # diffs <- (r - fl(pi)) * ls_inv / 2L
-  # ret <- tryCatch({scale_inv * (cosh_coef * tf$math$cosh(diffs) - diffs * tf$math$sinh(diffs))},
-  #                 warning = function(w){
-  #                   message("warn!") 
-  #                   NA
-  #                 }, error = function(e){
-  #                   message("errorr!")
-  #                   NA
-  #                 })
-  # ret
+  # calculate distances
+  rs <- great_circle_dist(Xs, Xs_prime, space_dims, circumference) / lengthscale
+  # timescale ends up squared together with distances
+  rt <- squared_dist(Xt, Xt_prime, timescale)
   
-  ret <- tf$cast(variance, "float64")
+  # do I need to convert variance to tf type?
+  variance * 1 / (1 + rs + rt)
 }
 
 
